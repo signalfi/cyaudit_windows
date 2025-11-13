@@ -1,0 +1,31 @@
+{
+  "output_directory": "assessments",
+  "logging": {
+    "directory": "logs",
+    "retention_days": 30
+  },
+  "assessment": {
+    "retention_days": 90,
+    "include_system_info": true,
+    "include_users": true,
+    "include_groups": true,
+    "include_services": true,
+    "include_processes": true,
+    "include_network": true,
+    "include_security_policies": true,
+    "include_registry": true,
+    "include_installed_software": true
+  },
+  "splunk": {
+    "enabled": false,
+    "forwarder_path": "C:\\Program Files\\SplunkUniversalForwarder",
+    "monitor_path": null,
+    "sourcetype": "cyaudit:windows:assessment"
+  },
+  "task_scheduler": {
+    "task_name": "CyAudit_Security_Assessment",
+    "schedule": "DAILY",
+    "start_time": "02:00",
+    "enabled": true
+  }
+}

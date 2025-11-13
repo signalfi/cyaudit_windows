@@ -1,0 +1,9 @@
+# CyAudit Opus v3.4 Requirements
+# Python 3.7+ required
+
+# No external dependencies required for core functionality
+# All modules use Python standard library only
+
+# Optional: For development and testing
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
