@@ -1,0 +1,111 @@
+{
+  "_description": "CyAudit Automated Pipeline Configuration - Edit this file to customize your deployment",
+  "_version": "1.0.0",
+
+  "ClientName": "MyOrganization",
+  "_ClientName_help": "Your organization name (used in CyAudit reporting)",
+
+  "ComputerName": "",
+  "_ComputerName_help": "Computer to audit (leave blank to use current computer, can override with -ComputerName parameter)",
+
+  "OutputBasePath": "C:\\CyAudit\\Assessments",
+  "_OutputBasePath_help": "Where CyAudit stores raw assessment output (each run creates timestamped subdirectory)",
+
+  "SplunkReadyPath": "C:\\CyAudit\\SplunkReady",
+  "_SplunkReadyPath_help": "Where transformed Splunk-ready JSON files are written (monitored by Universal Forwarder)",
+
+  "LogPath": "C:\\CyAudit\\Logs",
+  "_LogPath_help": "Where pipeline execution logs are stored",
+
+  "ValidateOutput": true,
+  "_ValidateOutput_help": "Run validation tests on transformed data (recommended: true)",
+
+  "FailOnValidationError": false,
+  "_FailOnValidationError_help": "Stop pipeline if validation fails (false = continue despite validation errors)",
+
+  "RetentionDays": 30,
+  "_RetentionDays_help": "Delete assessments/logs older than this many days (0 = never delete)",
+
+  "CyAuditOptions": {
+    "_description": "Optional parameters passed to CyAudit_Opus_V3.4.ps1",
+    "OutputPath": null,
+    "_OutputPath_help": "Override default CyAudit output path (null = use CyAudit default which is current directory)",
+    "IncludeHTML": true,
+    "_IncludeHTML_help": "Generate HTML reports (true = generate, false = skip for faster execution)"
+  },
+
+  "EmailAlerts": {
+    "_description": "Email notification configuration (optional)",
+    "Enabled": false,
+    "_Enabled_help": "Enable email notifications (requires SMTP configuration below)",
+
+    "SendOnSuccess": false,
+    "_SendOnSuccess_help": "Send email on successful completion (false = only send on failure)",
+
+    "SmtpServer": "smtp.example.com",
+    "_SmtpServer_help": "SMTP server hostname or IP address",
+
+    "Port": 25,
+    "_Port_help": "SMTP port (25, 587, or 465 for SSL)",
+
+    "UseSsl": false,
+    "_UseSsl_help": "Use SSL/TLS for SMTP connection",
+
+    "From": "cyaudit@example.com",
+    "_From_help": "Email address for 'From' field",
+
+    "To": "admin@example.com",
+    "_To_help": "Email address(es) for notifications (comma-separated for multiple)",
+
+    "Credential": null,
+    "_Credential_help": "SMTP authentication (set to object with Username and Password properties, or null for anonymous)",
+    "_Credential_example": {
+      "Username": "smtp-user@example.com",
+      "Password": "YourPassword"
+    }
+  },
+
+  "_IMPORTANT_NOTES": [
+    "1. All paths must use double backslashes (\\\\) in JSON format",
+    "2. Ensure the service account running the scheduled task has permissions to all specified directories",
+    "3. The SplunkReadyPath should match the path configured in Universal Forwarder inputs.conf",
+    "4. RetentionDays cleanup runs after each successful pipeline execution",
+    "5. Email alerts require network access to SMTP server from the system running the pipeline",
+    "6. Fields starting with underscore (_) are comments and are ignored by the script"
+  ],
+
+  "_EXAMPLE_CONFIGURATIONS": {
+    "_description": "Common configuration scenarios",
+
+    "_Scenario_1_LocalSystem": {
+      "ClientName": "MyOrg",
+      "ComputerName": "",
+      "OutputBasePath": "C:\\CyAudit\\Assessments",
+      "SplunkReadyPath": "C:\\CyAudit\\SplunkReady",
+      "RetentionDays": 30,
+      "EmailAlerts": {
+        "Enabled": false
+      }
+    },
+
+    "_Scenario_2_RemoteMonitoring": {
+      "_description": "Monitor remote system (requires appropriate permissions)",
+      "ClientName": "Production",
+      "ComputerName": "PROD-WEB-01",
+      "OutputBasePath": "D:\\Monitoring\\CyAudit\\Output",
+      "SplunkReadyPath": "D:\\Monitoring\\CyAudit\\Splunk",
+      "RetentionDays": 90,
+      "EmailAlerts": {
+        "Enabled": true,
+        "SendOnSuccess": true
+      }
+    },
+
+    "_Scenario_3_MinimalRetention": {
+      "_description": "Keep only current assessment (1 day retention)",
+      "RetentionDays": 1,
+      "ValidateOutput": false,
+      "FailOnValidationError": false
+    }
+  }
+}
