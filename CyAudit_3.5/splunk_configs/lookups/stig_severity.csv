@@ -1,0 +1,63 @@
+STIG_ID,Severity,Category,Title
+SV-220799r958518_rule,High,CAT2,Local administrator account token filtering
+SV-271426r1059557_rule,High,CAT1,Certificate-based authentication for domain controllers
+SV-103263r1_rule,Medium,CAT2,PowerShell script block logging
+SV-220808r991589_rule,Medium,CAT2,Wi-Fi Sense must be disabled
+SV-103363r1_rule,Medium,CAT2,Cached logon credentials limit
+SV-220835r991589_rule,Medium,CAT2,Windows Update delivery optimization
+SV-103603r1_rule,Medium,CAT2,Administrator account enumeration
+SV-103351r1_rule,Medium,CAT2,File Explorer shell protocol protection
+SV-103261r1_rule,Medium,CAT2,Command line data in process creation
+SV-103581r1_rule,High,CAT1,Kerberos encryption types
+SV-220830r991589_rule,Medium,CAT2,Enhanced anti-spoofing for facial recognition
+SV-103579r1_rule,High,CAT1,Password for private key access
+SV-220805r971535_rule,Medium,CAT2,ECC Curves priority
+SV-220703r958552_rule,High,CAT1,BitLocker PIN for pre-boot authentication
+SV-103353r1_rule,Medium,CAT2,RSS feed attachment download prevention
+SV-220842r991589_rule,Medium,CAT2,Edge certificate error override prevention
+SV-220843r991589_rule,Medium,CAT2,Edge password manager disabled
+SV-220840r991589_rule,Medium,CAT2,SmartScreen filter enforcement
+SV-220846r991589_rule,High,CAT1,Windows Hello hardware security device
+SV-220847r991589_rule,Medium,CAT2,Windows Hello PIN minimum length
+SV-103341r1_rule,Medium,CAT2,Authentication prompt on wake from sleep
+SV-103489r1_rule,Medium,CAT2,Print driver download over HTTP disabled
+SV-103539r1_rule,Medium,CAT2,RPC unauthenticated client restriction
+SV-103059r1_rule,High,CAT1,Remote Desktop Services RPC encryption
+SV-103495r1_rule,Medium,CAT2,Application Compatibility Program Inventory disabled
+SV-220869r958400_rule,Medium,CAT2,Voice activation above lock screen disabled
+SV-220831r958478_rule,Medium,CAT2,Microsoft consumer experiences disabled
+SV-103331r1_rule,High,CAT1,Credential delegation protection
+SV-103345r1_rule,Medium,CAT2,Telemetry level configuration
+SV-103333r1_rule,High,CAT1,Virtualization-based security enabled
+SV-103365r1_rule,High,CAT1,Platform security features requirement
+SV-103265r1_rule,Medium,CAT2,Application event log size
+SV-103267r1_rule,High,CAT1,Security event log size
+SV-103269r1_rule,Medium,CAT2,System event log size
+SV-103349r1_rule,Medium,CAT2,File Explorer heap termination on corruption
+SV-220845r958478_rule,Medium,CAT2,Game DVR disabled
+SV-220814r991589_rule,Medium,CAT2,Group Policy object reprocessing
+SV-103287r1_rule,High,CAT1,Always install elevated disabled
+SV-103327r1_rule,High,CAT1,Insecure guest authentication disabled
+SV-220803r958478_rule,High,CAT1,Internet connection sharing disabled
+SV-103329r1_rule,High,CAT1,Hardened UNC paths for SYSVOL
+SV-103329r1_rule_NETLOGON,High,CAT1,Hardened UNC paths for NETLOGON
+SV-103485r1_rule,Medium,CAT2,Lock screen slideshow disabled
+SV-220860r958422_rule,Medium,CAT2,PowerShell script block logging (Windows 10)
+SV-252896r958420_rule,Medium,CAT2,PowerShell transcription enabled
+SV-103493r1_rule,Medium,CAT2,Network selection UI on logon disabled
+SV-220806r991589_rule,Medium,CAT2,Simultaneous connections limited
+SV-103585r1_rule,High,CAT1,WinRM client unencrypted traffic disabled
+SV-103587r1_rule,High,CAT1,WinRM service RunAs credentials disabled
+SV-103501r1_rule,Medium,CAT2,Indexing of encrypted files disabled
+SV-103385r1_rule,High,CAT1,NTLM minimum client security
+SV-103387r1_rule,High,CAT1,PKU2U online identity authentication disabled
+SV-103133r1_rule,High,CAT1,Remote SAM access restricted
+SV-103597r1_rule,High,CAT1,FIPS-compliant algorithms enforced
+SV-103487r1_rule,High,CAT1,WDigest authentication disabled
+SV-103397r1_rule,Medium,CAT2,Global system objects permissions strengthened
+SV-220727r958928_rule,Medium,CAT2,SEHOP enabled
+SV-103337r1_rule,High,CAT1,Early Launch Antimalware driver policy
+SV-103391r1_rule,Medium,CAT2,LDAP client signing
+SV-103479r1_rule,High,CAT1,SMB v1 protocol disabled (server)
+SV-103555r1_rule,High,CAT1,Unencrypted passwords to SMB servers disabled
+V3.1_Compatibility_DriverSigning,Medium,CAT2,Driver signing policy enforcement

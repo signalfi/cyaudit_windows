@@ -1,0 +1,25 @@
+Value,Permission,Description
+2032127,FullControl,Full control of file/directory
+1179817,Modify,Modify permissions
+1179785,ReadAndExecute,Read and execute permissions
+131241,Read,Read-only access
+278,Write,Write access
+131209,ReadAndExecute,Read and execute (alternate)
+268435456,GenericAll,Generic all access
+536870912,GenericWrite,Generic write access
+-2147483648,GenericRead,Generic read access
+1073741824,GenericExecute,Generic execute access
+1,ReadData,Read data from file
+2,WriteData,Write data to file
+4,AppendData,Append data to file
+8,ReadExtendedAttributes,Read extended attributes
+16,WriteExtendedAttributes,Write extended attributes
+32,ExecuteFile,Execute file
+64,DeleteSubdirectoriesAndFiles,Delete subdirectories and files
+128,ReadAttributes,Read attributes
+256,WriteAttributes,Write attributes
+65536,Delete,Delete the object
+131072,ReadPermissions,Read permissions
+262144,ChangePermissions,Change permissions
+524288,TakeOwnership,Take ownership
+1048576,Synchronize,Synchronize access
