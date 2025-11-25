@@ -1,7 +1,7 @@
-# CyAudit 3.4 - Automated Security Assessment & Splunk Integration
+# CyAudit 3.5 - Automated Security Assessment & Splunk Integration
 
-**Version:** 1.0.0
-**Release Date:** 2025-11-12
+**Version:** 3.5.0
+**Release Date:** 2025-11-25
 **Package Size:** 420 KB (complete)
 
 ---
@@ -10,7 +10,7 @@
 
 This package provides everything needed for **fully automated** Windows security assessments with Splunk Cloud integration:
 
-✅ **CyAudit Opus v3.4** - Comprehensive Windows security audit engine
+✅ **CyAudit Opus v3.5** - Comprehensive Windows security audit engine
 ✅ **Automated Orchestration** - Schedule and run assessments without manual intervention
 ✅ **Splunk Transformation** - Convert audit data to Splunk-optimized NDJSON format
 ✅ **Universal Forwarder Integration** - Automatic data forwarding to Splunk Cloud
@@ -24,10 +24,10 @@ This package provides everything needed for **fully automated** Windows security
 
 | Document | Purpose | Audience |
 |----------|---------|----------|
-| **[QUICK_START.md](QUICK_START.md)** | Get running in 15 minutes | Experienced Admins |
-| **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** | Complete deployment & scheduling guide | All Users |
-| **[README_Splunk_Integration.md](README_Splunk_Integration.md)** | Splunk configuration & sample searches | Splunk Admins |
-| **[CyAuditPipeline.config.json](CyAuditPipeline.config.json)** | Configuration file with inline help | All Users |
+| **[QUICK_START.md](CyAudit_3.5/QUICK_START.md)** | Get running in 15 minutes | Experienced Admins |
+| **[DEPLOYMENT_GUIDE.md](CyAudit_3.5/DEPLOYMENT_GUIDE.md)** | Complete deployment & scheduling guide | All Users |
+| **[README_Splunk_Integration.md](CyAudit_3.5/README_Splunk_Integration.md)** | Splunk configuration & sample searches | Splunk Admins |
+| **[CyAuditPipeline.config.json](CyAudit_3.5/CyAuditPipeline.config.json)** | Configuration file with inline help | All Users |
 
 ---
 
@@ -73,7 +73,7 @@ This package provides everything needed for **fully automated** Windows security
 
 | File | Description | Size |
 |------|-------------|------|
-| **CyAudit_Opus_V3.4.ps1** | Main security assessment engine | 203 KB |
+| **CyAudit_Opus_V3.5.ps1** | Main security assessment engine | 203 KB |
 | **Run-CyAuditPipeline.ps1** | Orchestration & scheduling script | 25 KB |
 | **Transform-CyAuditForSplunk.ps1** | Data transformation for Splunk | 58 KB |
 | **Test-SplunkTransformation.ps1** | Validation & quality assurance | 17 KB |
@@ -114,15 +114,15 @@ splunk_configs/
 
 ### For Experienced Administrators
 
-**Want to get running quickly?** → **[QUICK_START.md](QUICK_START.md)** (15 minutes)
+**Want to get running quickly?** → **[QUICK_START.md](CyAudit_3.5/QUICK_START.md)** (15 minutes)
 
 ### For Complete Deployment
 
-**Need step-by-step instructions?** → **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** (comprehensive)
+**Need step-by-step instructions?** → **[DEPLOYMENT_GUIDE.md](CyAudit_3.5/DEPLOYMENT_GUIDE.md)** (comprehensive)
 
 ### Basic Workflow
 
-1. **Install** - Extract to `C:\CyAudit\CyAudit_3.4\`
+1. **Install** - Extract to `C:\CyAudit\CyAudit_3.5\`
 2. **Configure** - Edit `CyAuditPipeline.config.json`
 3. **Test** - Run `Run-CyAuditPipeline.ps1` manually
 4. **Schedule** - Create Windows scheduled task (weekly recommended)
@@ -304,12 +304,12 @@ index=cyaudit sourcetype=cyaudit:stig_* | stats count by compliance_status
 
 | Issue | Quick Fix | Documentation |
 |-------|-----------|---------------|
-| Task fails to run | Check execution policy: `Set-ExecutionPolicy RemoteSigned -Scope LocalMachine` | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#pipeline-fails-to-run) |
-| No data in Splunk | Verify forwarder running: `Get-Service SplunkForwarder` | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#forwarder-not-forwarding-data) |
-| Pipeline errors | Check log: `C:\CyAudit\Logs\CyAuditPipeline_*.log` | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#troubleshooting) |
-| Config not found | Verify file exists: `Test-Path "C:\CyAudit\CyAudit_3.4\CyAuditPipeline.config.json"` | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#configuration-file-not-found) |
+| Task fails to run | Check execution policy: `Set-ExecutionPolicy RemoteSigned -Scope LocalMachine` | [DEPLOYMENT_GUIDE.md](CyAudit_3.5/DEPLOYMENT_GUIDE.md#pipeline-fails-to-run) |
+| No data in Splunk | Verify forwarder running: `Get-Service SplunkForwarder` | [DEPLOYMENT_GUIDE.md](CyAudit_3.5/DEPLOYMENT_GUIDE.md#forwarder-not-forwarding-data) |
+| Pipeline errors | Check log: `C:\CyAudit\Logs\CyAuditPipeline_*.log` | [DEPLOYMENT_GUIDE.md](CyAudit_3.5/DEPLOYMENT_GUIDE.md#troubleshooting) |
+| Config not found | Verify file exists: `Test-Path "C:\CyAudit\CyAudit_3.5\CyAuditPipeline.config.json"` | [DEPLOYMENT_GUIDE.md](CyAudit_3.5/DEPLOYMENT_GUIDE.md#configuration-file-not-found) |
 
-**See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#troubleshooting) for comprehensive troubleshooting**
+**See [DEPLOYMENT_GUIDE.md](CyAudit_3.5/DEPLOYMENT_GUIDE.md#troubleshooting) for comprehensive troubleshooting**
 
 ---
 
@@ -327,7 +327,7 @@ Receive alerts on failures or optionally on successful completion.
 ### Performance Tuning
 Optimize for resource-constrained systems (disable HTML, skip validation, reduce scope).
 
-**See [DEPLOYMENT_GUIDE.md - Advanced Scenarios](DEPLOYMENT_GUIDE.md#advanced-scenarios) for details**
+**See [DEPLOYMENT_GUIDE.md - Advanced Scenarios](CyAudit_3.5/DEPLOYMENT_GUIDE.md#advanced-scenarios) for details**
 
 ---
 
@@ -372,14 +372,22 @@ index=cyaudit sourcetype=cyaudit:missinghotfixes Rating="Critical"
 | table computer_name, KBNum, Description, InstalledOn
 ```
 
-**See [README_Splunk_Integration.md](README_Splunk_Integration.md#sample-searches) for 30+ search examples**
+**See [README_Splunk_Integration.md](CyAudit_3.5/README_Splunk_Integration.md#sample-searches) for 30+ search examples**
 
 ---
 
 ## Version History
 
-### v1.0.0 (2025-11-12)
-- Initial release
+### v3.5.0 (2025-11-25)
+- Fixed Unicode/encoding corruption in PowerShell scripts
+- Fixed STIG version mismatch for PowerSTIG compatibility
+- Fixed pipeline output directory handling
+- Fixed script hang during Splunk transformation
+- Hardened Write-SplunkNDJson with proper disposal and error handling
+- See [CHANGELOG.md](CyAudit_3.5/CHANGELOG.md) for details
+
+### v3.4.0 (2025-11-12)
+- Initial release with Splunk integration
 - Automated pipeline orchestration
 - Universal Forwarder integration as primary method
 - HEC upload as alternative method
@@ -393,9 +401,9 @@ index=cyaudit sourcetype=cyaudit:missinghotfixes Rating="Critical"
 ## Support
 
 ### Documentation
-- **[QUICK_START.md](QUICK_START.md)** - Fast deployment for experienced admins
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete reference with troubleshooting
-- **[README_Splunk_Integration.md](README_Splunk_Integration.md)** - Splunk configuration details
+- **[QUICK_START.md](CyAudit_3.5/QUICK_START.md)** - Fast deployment for experienced admins
+- **[DEPLOYMENT_GUIDE.md](CyAudit_3.5/DEPLOYMENT_GUIDE.md)** - Complete reference with troubleshooting
+- **[README_Splunk_Integration.md](CyAudit_3.5/README_Splunk_Integration.md)** - Splunk configuration details
 
 ### Logs
 - Pipeline: `C:\CyAudit\Logs\CyAuditPipeline_*.log`
@@ -403,23 +411,23 @@ index=cyaudit sourcetype=cyaudit:missinghotfixes Rating="Critical"
 - Forwarder: `C:\Program Files\SplunkUniversalForwarder\var\log\splunk\splunkd.log`
 
 ### Configuration File
-All settings documented with inline comments: `CyAuditPipeline.config.json`
+All settings documented with inline comments: [CyAuditPipeline.config.json](CyAudit_3.5/CyAuditPipeline.config.json)
 
 ---
 
 ## License
 
-This package is provided as-is for use with CyAudit Opus v3.4 and Splunk Cloud deployments.
+This package is provided as-is for use with CyAudit Opus v3.5 and Splunk Cloud deployments.
 
 ---
 
 ## Getting Help
 
-1. **Quick Issues** → Check [QUICK_START.md](QUICK_START.md) troubleshooting table
-2. **Detailed Issues** → See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#troubleshooting)
-3. **Splunk Questions** → Refer to [README_Splunk_Integration.md](README_Splunk_Integration.md)
-4. **Configuration Help** → Read inline comments in `CyAuditPipeline.config.json`
+1. **Quick Issues** → Check [QUICK_START.md](CyAudit_3.5/QUICK_START.md) troubleshooting table
+2. **Detailed Issues** → See [DEPLOYMENT_GUIDE.md](CyAudit_3.5/DEPLOYMENT_GUIDE.md#troubleshooting)
+3. **Splunk Questions** → Refer to [README_Splunk_Integration.md](CyAudit_3.5/README_Splunk_Integration.md)
+4. **Configuration Help** → Read inline comments in [CyAuditPipeline.config.json](CyAudit_3.5/CyAuditPipeline.config.json)
 
 ---
 
-**Ready to get started?** → **[QUICK_START.md](QUICK_START.md)** (15 minutes to full automation!)
+**Ready to get started?** → **[QUICK_START.md](CyAudit_3.5/QUICK_START.md)** (15 minutes to full automation!)
