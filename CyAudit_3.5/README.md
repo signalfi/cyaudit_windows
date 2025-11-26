@@ -158,7 +158,7 @@ Converts raw audit data to Splunk-ready format:
 - ✅ Multi-value fields → JSON arrays
 - ✅ Metadata enrichment → Computer name, audit date, event type
 
-**Output:** 22 NDJSON files optimized for Splunk search-time extraction
+**Output:** 25 NDJSON files optimized for Splunk search-time extraction
 
 ### Validation
 
@@ -384,6 +384,7 @@ index=cyaudit sourcetype=cyaudit:missinghotfixes Rating="Critical"
 - Fixed pipeline output directory handling
 - Fixed script hang during Splunk transformation
 - Hardened Write-SplunkNDJson with proper disposal and error handling
+- Fixed Splunk config: filename patterns, sourcetype routing, props.conf consolidation
 - See CHANGELOG.md for details
 
 ### v3.4.0 (2025-11-12)
