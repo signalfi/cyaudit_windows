@@ -158,7 +158,7 @@ Converts raw audit data to Splunk-ready format:
 - ✅ Multi-value fields → JSON arrays
 - ✅ Metadata enrichment → Computer name, audit date, event type
 
-**Output:** 22 NDJSON files optimized for Splunk search-time extraction
+**Output:** 25 NDJSON files optimized for Splunk search-time extraction
 
 ### Validation
 

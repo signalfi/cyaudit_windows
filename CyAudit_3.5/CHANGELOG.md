@@ -92,6 +92,36 @@ This release focuses on stability and compatibility fixes identified during prod
 
 ---
 
+#### Splunk Config Remediation (Issue 5)
+**Severity:** High | **Impact:** 3 STIG/Executive files not generated; sourcetype routing not wired
+
+**Problem:** Multiple Splunk ingestion issues:
+1. Transformer couldn't find 3 source files due to filename pattern mismatch (underscore vs parentheses format)
+2. Sourcetype routing via `[cyaudit:auto]` not configured in props.conf
+3. Host extraction transform not wired
+4. 9 duplicate stanzas in props.conf causing maintenance burden
+
+**Solution:**
+- Fixed filename patterns in `Transform-CyAuditForSplunk.ps1`:
+  - Line 684: `$($ComputerName)STIG_Registry_Compliance.json`
+  - Line 1048: `$($ComputerName)STIG_Compliance_Summary_V3.3.json`
+  - Line 1266: `$($ComputerName)Executive_Summary_V3.3.json`
+- Added `[cyaudit:auto]` stanza with `TRANSFORMS-set_sourcetype` and `TRANSFORMS-set_host`
+- Consolidated 9 duplicate props.conf stanzas (reduced from 367 to 304 lines)
+- Added `EVAL-event_category` mapping to `[cyaudit:*]` for event tagging
+
+**Results:**
+- Files generated: 22 → **25** (+3 previously missing files)
+- `cyaudit_stig_summary_v33.json` (44 KB) - now generated
+- `cyaudit_stig_registry.json` (27 KB) - now generated
+- `cyaudit_executive_summary.json` (662 B) - now generated
+
+**Files Modified:**
+- `Transform-CyAuditForSplunk.ps1` - 3 filename pattern fixes
+- `splunk_configs/props.conf` - Restructured with routing and consolidation
+
+---
+
 ## Previous Versions
 
 ### Version 3.4.0 (2025-11-12)

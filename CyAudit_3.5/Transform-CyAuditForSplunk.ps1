@@ -681,7 +681,7 @@ function Transform-STIGRegistryCompliance {
 
     Write-TransformLog "Transforming STIG Registry Compliance..."
 
-    $filePath = Join-Path $InputPath "$($ComputerName)_STIG_Registry_Compliance.json"
+    $filePath = Join-Path $InputPath "$($ComputerName)STIG_Registry_Compliance.json"
     if (-not (Test-Path $filePath)) { return $null }
 
     $data = Read-UTF16Json -FilePath $filePath
@@ -1045,7 +1045,7 @@ function Transform-STIGComplianceSummary {
 
     Write-TransformLog "Transforming STIG Compliance Summary (V3.3)..."
 
-    $filePath = Join-Path $InputPath "$($ComputerName)_STIG_Compliance_Summary_V3.3.json"
+    $filePath = Join-Path $InputPath "$($ComputerName)STIG_Compliance_Summary_V3.3.json"
     if (-not (Test-Path $filePath)) { return $null }
 
     $data = Read-UTF16Json -FilePath $filePath
@@ -1263,7 +1263,7 @@ function Transform-ExecutiveSummary {
 
     Write-TransformLog "Transforming Executive Summary (V3.3)..."
 
-    $filePath = Join-Path $InputPath "$($ComputerName)_Executive_Summary_V3.3.json"
+    $filePath = Join-Path $InputPath "$($ComputerName)Executive_Summary_V3.3.json"
     if (-not (Test-Path $filePath)) { return $null }
 
     $data = Read-UTF16Json -FilePath $filePath

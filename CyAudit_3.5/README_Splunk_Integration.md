@@ -1,7 +1,7 @@
 # CyAudit to Splunk Cloud Integration Guide
 
-**Version:** 1.0
-**Date:** 2025-11-12
+**Version:** 1.1
+**Date:** 2025-11-25
 **Target Platform:** Splunk Cloud
 
 ---
@@ -62,7 +62,7 @@ This integration transforms CyAudit Opus v3.5 security assessment output into Sp
                                 ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ Step 2: Transformation                                           │
-│ Transform-CyAuditForSplunk.ps1 → 22 NDJSON files               │
+│ Transform-CyAuditForSplunk.ps1 → 25 NDJSON files               │
 │ - UTF-8 encoding                                                 │
 │ - ISO 8601 timestamps                                            │
 │ - Flattened structures                                           │
@@ -122,7 +122,9 @@ CyAudit/
     ├── cyaudit_groups.json
     ├── cyaudit_stig_summary_v33.json
     ├── cyaudit_stig_powerstig.json
-    └── ... (22 files total)
+    ├── cyaudit_stig_registry.json
+    ├── cyaudit_executive_summary.json
+    └── ... (25 files total)
 ```
 
 ---
@@ -217,7 +219,7 @@ Restart-Service SplunkForwarder
     -IncludeAuxiliaryFiles
 ```
 
-**Output**: `C:\CyAudit\SplunkReady\` directory with 22 NDJSON files
+**Output**: `C:\CyAudit\SplunkReady\` directory with 25 NDJSON files
 
 **Note**: The Universal Forwarder automatically detects and forwards the new JSON files within seconds.
 
@@ -1153,6 +1155,7 @@ Write-Host "Daily Ingestion: $([Math]::Round(($SystemsCount * $AssessmentSizeMB 
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | 2025-11-25 | Fixed filename patterns for STIG/Executive files; added sourcetype routing via `[cyaudit:auto]`; consolidated duplicate props.conf stanzas; now generates 25 files |
 | 1.0.0 | 2025-11-12 | Initial release with full HEC integration |
 
 ### F. Support & Resources
@@ -1178,6 +1181,6 @@ This integration is provided as-is for use with CyAudit Opus v3.5 and Splunk Clo
 
 ---
 
-**Last Updated**: 2025-11-12
+**Last Updated**: 2025-11-25
 **Maintainer**: CyAudit Team
-**Version**: 1.0.0
+**Version**: 1.1.0
