@@ -1,0 +1,228 @@
+# =============================================================================
+# CyAudit 3.5 Installer Build Workflow
+# =============================================================================
+# Builds the Windows installer using GitHub Actions
+#
+# Triggers:
+#   - Push to main/master branch (changes to Enterprise/)
+#   - Manual workflow dispatch
+#   - Pull requests (for testing)
+#
+# Outputs:
+#   - CyAudit_3.5_Setup.exe as downloadable artifact
+#
+# =============================================================================
+
+name: Build CyAudit Installer
+
+on:
+  # Trigger on push to main branch when Enterprise files change
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'CyAudit_3.5/Enterprise/**'
+      - '.github/workflows/build-installer.yml'
+
+  # Trigger on pull requests
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'CyAudit_3.5/Enterprise/**'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag for the release (e.g., v3.5.0)'
+        required: false
+        default: ''
+
+env:
+  ENTERPRISE_PATH: CyAudit_3.5/Enterprise
+
+jobs:
+  build:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Display build info
+      - name: Display build information
+        run: |
+          Write-Host "Building CyAudit 3.5 Installer"
+          Write-Host "Runner: $env:RUNNER_OS"
+          Write-Host "Commit: $env:GITHUB_SHA"
+          Write-Host "Branch: $env:GITHUB_REF_NAME"
+
+      # Verify required files exist
+      - name: Verify source files
+        run: |
+          $requiredFiles = @(
+            "${{ env.ENTERPRISE_PATH }}/CyAudit_Setup.iss",
+            "${{ env.ENTERPRISE_PATH }}/CyAudit_3.5/CyAudit_Opus_V3.5.ps1",
+            "${{ env.ENTERPRISE_PATH }}/CyAudit_3.5/Run-CyAuditPipeline.ps1",
+            "${{ env.ENTERPRISE_PATH }}/CyAudit_3.5/CyAuditPipeline.config.json"
+          )
+
+          $missing = @()
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+              $missing += $file
+            }
+          }
+
+          if ($missing.Count -gt 0) {
+            Write-Error "Missing required files:"
+            $missing | ForEach-Object { Write-Error "  - $_" }
+            exit 1
+          }
+
+          Write-Host "All required files found"
+
+      # Install Inno Setup
+      - name: Install Inno Setup
+        run: |
+          # Download Inno Setup
+          $innoUrl = "https://jrsoftware.org/download.php/is.exe"
+          $innoInstaller = "$env:TEMP\innosetup.exe"
+
+          Write-Host "Downloading Inno Setup..."
+          Invoke-WebRequest -Uri $innoUrl -OutFile $innoInstaller -UseBasicParsing
+
+          Write-Host "Installing Inno Setup..."
+          Start-Process -FilePath $innoInstaller -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -Wait
+
+          # Add to PATH
+          $innoPath = "C:\Program Files (x86)\Inno Setup 6"
+          if (Test-Path $innoPath) {
+            echo "$innoPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            Write-Host "Inno Setup installed at: $innoPath"
+          } else {
+            Write-Error "Inno Setup installation failed"
+            exit 1
+          }
+
+      # Build the installer
+      - name: Build installer
+        run: |
+          cd "${{ env.ENTERPRISE_PATH }}"
+
+          # Create output directory
+          New-Item -ItemType Directory -Path "Output" -Force | Out-Null
+
+          # Compile with Inno Setup
+          Write-Host "Compiling installer..."
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /O"Output" CyAudit_Setup.iss
+
+          # Verify output
+          if (Test-Path "Output\CyAudit_3.5_Setup.exe") {
+            $fileInfo = Get-Item "Output\CyAudit_3.5_Setup.exe"
+            Write-Host "Build successful!"
+            Write-Host "Output: $($fileInfo.FullName)"
+            Write-Host "Size: $([math]::Round($fileInfo.Length / 1MB, 2)) MB"
+          } else {
+            Write-Error "Build failed - output file not created"
+            exit 1
+          }
+
+      # Upload artifact
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CyAudit_3.5_Setup
+          path: ${{ env.ENTERPRISE_PATH }}/Output/CyAudit_3.5_Setup.exe
+          retention-days: 30
+          if-no-files-found: error
+
+      # Create release (only on manual trigger with version)
+      - name: Create Release
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: CyAudit ${{ github.event.inputs.version }}
+          body: |
+            ## CyAudit 3.5 Installer
+
+            ### Installation
+
+            **GUI Installation:**
+            1. Download `CyAudit_3.5_Setup.exe`
+            2. Right-click and "Run as administrator"
+            3. Follow the installation wizard
+
+            **Silent Installation:**
+            ```cmd
+            CyAudit_3.5_Setup.exe /VERYSILENT /TASKS="scheduledtask,powerstig"
+            ```
+
+            ### Requirements
+            - Windows 10/11 or Windows Server 2019/2022
+            - PowerShell 5.1 or later
+            - Administrator privileges
+            - Internet access (for PowerSTIG installation)
+
+            ### What's Included
+            - CyAudit Opus v3.5 security assessment engine
+            - Pipeline orchestration scripts
+            - Splunk integration components
+            - STIG compliance data (Windows 10/11, Server 2019/2022)
+
+          files: |
+            ${{ env.ENTERPRISE_PATH }}/Output/CyAudit_3.5_Setup.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Notify on failure
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: build
+    if: failure()
+
+    steps:
+      - name: Create failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Installer build failed: ${context.sha.substring(0, 7)}`;
+            const body = `
+            ## Build Failure
+
+            **Workflow:** ${context.workflow}
+            **Run:** [#${context.runNumber}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            **Commit:** ${context.sha}
+            **Branch:** ${context.ref}
+
+            Please check the workflow logs for details.
+            `;
+
+            // Only create issue if one doesn't exist
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'build-failure'
+            });
+
+            const existingIssue = issues.data.find(issue => issue.title.includes('Installer build failed'));
+
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['build-failure', 'automated']
+              });
+            }

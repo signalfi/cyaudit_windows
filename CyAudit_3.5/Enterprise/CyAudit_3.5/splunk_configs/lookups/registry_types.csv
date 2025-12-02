@@ -1,0 +1,8 @@
+Type,TypeName,Description
+0,None,No defined value type
+1,String,String value (REG_SZ)
+2,ExpandString,Expandable string value (REG_EXPAND_SZ)
+3,Binary,Binary data (REG_BINARY)
+4,DWord,32-bit number (REG_DWORD)
+7,MultiString,Multi-string value (REG_MULTI_SZ)
+11,QWord,64-bit number (REG_QWORD)
