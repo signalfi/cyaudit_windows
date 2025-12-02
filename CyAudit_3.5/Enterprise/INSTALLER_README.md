@@ -200,6 +200,37 @@ Configure SmartScreen via Group Policy:
 
 ---
 
+## UAC and Elevation
+
+### Scheduled Task Execution (No UAC Prompt)
+
+When CyAudit runs via the scheduled task, **no UAC prompt appears**. This is because:
+- The task runs as `NT AUTHORITY\SYSTEM` (not a user account)
+- SYSTEM tasks execute in session 0 (no user desktop)
+- Windows UAC only applies to interactive user sessions
+
+This is the recommended execution method for automated assessments.
+
+### Interactive Desktop Shortcut (UAC Prompt Expected)
+
+When clicking "Run CyAudit Assessment" from the Start Menu or desktop:
+- A UAC elevation prompt will appear
+- This is normal Windows security behavior
+- Click "Yes" to approve elevation and run the assessment
+
+The UAC prompt for interactive execution cannot be suppressed without compromising security. This is by Windows design for admin tools.
+
+### Why SYSTEM Account is Used
+
+| Benefit | Description |
+|---------|-------------|
+| No credentials stored | Unlike user accounts, no password in Task Scheduler |
+| Highest privilege | SYSTEM has more access than Administrator |
+| No UAC | Session 0 execution bypasses UAC entirely |
+| Audit trail | Clearly identifies automated vs manual runs |
+
+---
+
 ## Post-Installation
 
 ### Verify Installation

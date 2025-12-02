@@ -352,6 +352,12 @@ powershell.exe -ExecutionPolicy Bypass -NoProfile -File "Uninstall-CyAudit.ps1" 
    powershell.exe -ExecutionPolicy Bypass -File "C:\CyAudit\CyAudit_3.5\Run-CyAuditPipeline.ps1"
    ```
 
+### Note on UAC
+
+Scheduled tasks created with `NT AUTHORITY\SYSTEM` account and `RunLevel Highest` do **NOT** trigger UAC prompts. This is by design—UAC applies to interactive processes, not service accounts running in session 0.
+
+The CyAudit scheduled task will execute without user intervention at the configured time (default: Sunday 2:00 AM). No UAC-related configuration changes are required for automated execution.
+
 ### Issue: Detection Script Returns False Negative
 
 **Symptom:** SCCM shows "not installed" but files exist
