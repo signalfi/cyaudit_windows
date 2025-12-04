@@ -122,8 +122,8 @@ Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -Command ""Get-
 ; Install PowerSTIG if selected
 Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -Command ""if (-not (Get-Module -ListAvailable -Name PowerSTIG)) {{ Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope AllUsers | Out-Null; Set-PSRepository -Name PSGallery -InstallationPolicy Trusted; Install-Module -Name PowerSTIG -Force -AllowClobber -Scope AllUsers -SkipPublisherCheck }}"""; Flags: runhidden waituntilterminated; Tasks: powerstig; StatusMsg: "Installing PowerSTIG module (this may take a few minutes)..."
 
-; Create scheduled task if selected
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -Command ""$Action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-ExecutionPolicy Bypass -NonInteractive -WindowStyle Hidden -File \\""{app}\CyAudit_3.5\Run-CyAuditPipeline.ps1\\""'; $Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At '02:00'; $Principal = New-ScheduledTaskPrincipal -UserId 'NT AUTHORITY\\SYSTEM' -LogonType ServiceAccount -RunLevel Highest; $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 4); Register-ScheduledTask -TaskName 'CyAudit Automated Assessment' -Action $Action -Trigger $Trigger -Principal $Principal -Settings $Settings -Force | Out-Null"""; Flags: runhidden waituntilterminated; Tasks: scheduledtask; StatusMsg: "Creating scheduled task..."
+; Create scheduled task if selected - using schtasks.exe (v2.7 - reliable quoting)
+Filename: "schtasks.exe"; Parameters: "/Create /TN ""CyAudit Automated Assessment"" /TR ""powershell.exe -ExecutionPolicy Bypass -NonInteractive -WindowStyle Hidden -File \""{app}\CyAudit_3.5\Run-CyAuditPipeline.ps1\"""" /SC WEEKLY /D SUN /ST 02:00 /RU ""NT AUTHORITY\SYSTEM"" /RL HIGHEST /F"; Flags: runhidden waituntilterminated; Tasks: scheduledtask; StatusMsg: "Creating scheduled task..."
 
 ; Optional: Launch README after install
 Filename: "notepad.exe"; Parameters: """{app}\Docs\GPO_Recommendations.md"""; Description: "View documentation"; Flags: nowait postinstall skipifsilent unchecked
@@ -132,8 +132,8 @@ Filename: "notepad.exe"; Parameters: """{app}\Docs\GPO_Recommendations.md"""; De
 Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -NoProfile -File ""{app}\CyAudit_3.5\Run-CyAuditElevated.ps1"""; Description: "Run first assessment now"; Flags: nowait postinstall skipifsilent unchecked
 
 [UninstallRun]
-; Remove scheduled task on uninstall
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -Command ""Unregister-ScheduledTask -TaskName 'CyAudit Automated Assessment' -Confirm:$false -ErrorAction SilentlyContinue"""; Flags: runhidden waituntilterminated
+; Remove scheduled task on uninstall - using schtasks.exe (v2.7)
+Filename: "schtasks.exe"; Parameters: "/Delete /TN ""CyAudit Automated Assessment"" /F"; Flags: runhidden waituntilterminated
 
 [UninstallDelete]
 ; Clean up directories that may have been created during use

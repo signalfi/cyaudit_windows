@@ -566,6 +566,7 @@ Get-FileHash -Path "Output\CyAudit_3.5_Setup_Clean.exe" -Algorithm MD5
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.7.0 | 2025-12-04 | Replaced PowerShell scheduled task creation with schtasks.exe for reliable operation |
 | 2.6.0 | 2025-12-04 | Fixed scheduled task creation in protected installer, added manual task setup documentation |
 | 2.3.0 | 2025-12-02 | Fixed PS2EXE argument parsing (`-end` parameter), timestamp format (underscore), directory cleanup |
 | 2.1.0 | 2025-12-02 | Fixed `$PSScriptRoot` empty in PS2EXE executables |

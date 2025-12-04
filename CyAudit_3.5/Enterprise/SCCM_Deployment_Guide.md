@@ -466,5 +466,6 @@ Use this checklist to verify successful deployment:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.2.0 | 2025-12-04 | Updated installer to use schtasks.exe for reliable scheduled task creation |
 | 1.1.0 | 2025-12-04 | Added manual scheduled task creation troubleshooting section |
 | 1.0.0 | 2025-12-01 | Initial release |
