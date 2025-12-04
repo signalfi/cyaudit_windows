@@ -174,7 +174,10 @@ foreach ($script in $ScriptsToCompile) {
         $ps2exeParams = @{
             InputFile = $scriptPath
             OutputFile = $exePath
-            NoConsole = $false
+            NoConsole = $true              # v2.9: Suppress console for performance
+            NoOutput = $true               # v2.10: Suppress Write-Host popups
+            NoError = $true                # v2.10: Suppress error popups
+            x64 = $true                    # v2.9: 64-bit compilation
             Version = "3.5.0.0"
             Company = "Cymantis"
             Product = "CyAudit"

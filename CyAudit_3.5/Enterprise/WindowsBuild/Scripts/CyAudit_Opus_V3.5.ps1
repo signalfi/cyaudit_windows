@@ -143,26 +143,72 @@ if ($PSScriptRoot) {
     $ScriptDir = Split-Path -Parent ([System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName)
 }
 
+# v2.9 Performance Optimization: Logging buffer for batched file I/O
+$script:LogBuffer = [System.Collections.Generic.List[string]]::new()
+$script:LastLogFile = $null
+$script:IsCompiledExe = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName -notmatch '\\powershell\.exe$'
+
+#region Early Module Loading
+# v2.9: Import modules ONCE at script start to avoid PS2EXE reload overhead
+$script:ModulesLoaded = @{}
+
+# Pre-load ActiveDirectory module (used by Get-ADUsers, Get-ADGroups, Get-ADTrusts)
+try {
+    Import-Module ActiveDirectory -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+    $script:ModulesLoaded['ActiveDirectory'] = $true
+} catch {
+    $script:ModulesLoaded['ActiveDirectory'] = $false
+}
+
+# Pre-load GroupPolicy module (used by Get-GPOBackup, Get-GPOLinks)
+try {
+    Import-Module GroupPolicy -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+    $script:ModulesLoaded['GroupPolicy'] = $true
+} catch {
+    $script:ModulesLoaded['GroupPolicy'] = $false
+}
+#endregion
+
 #region Helper Functions
 
 function Write-AuditLog {
+    # v2.9 Optimized: Skips console output in EXE context, buffers file writes
     param(
         [string]$Message,
         [string]$LogFile,
         [switch]$NoNewLine
     )
-    
+
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = if ($Message -match '^\d{4}-\d{2}-\d{2}') { $Message } else { "$timestamp - $Message" }
-    
-    if ($NoNewLine) {
-        Write-Host $Message -NoNewline
-    } else {
-        Write-Host $Message
+
+    # Only write to console if NOT running as PS2EXE compiled EXE
+    if (-not $script:IsCompiledExe) {
+        if ($NoNewLine) {
+            Write-Host $Message -NoNewline
+        } else {
+            Write-Host $Message
+        }
     }
-    
+
+    # Buffer log messages for batched file I/O
     if ($LogFile) {
-        Add-Content -Path $LogFile -Value $logMessage
+        $script:LastLogFile = $LogFile
+        $script:LogBuffer.Add($logMessage)
+
+        # Flush every 50 messages to reduce file handle operations
+        if ($script:LogBuffer.Count -ge 50) {
+            $script:LogBuffer | Out-File -FilePath $LogFile -Append -Encoding UTF8
+            $script:LogBuffer.Clear()
+        }
+    }
+}
+
+function Flush-AuditLog {
+    # v2.9: Flush any remaining buffered log messages to file
+    if ($script:LogBuffer.Count -gt 0 -and $script:LastLogFile) {
+        $script:LogBuffer | Out-File -FilePath $script:LastLogFile -Append -Encoding UTF8
+        $script:LogBuffer.Clear()
     }
 }
 
@@ -710,8 +756,7 @@ function Get-ADUsers {
     )
     
     $scriptBlock = {
-        Import-Module ActiveDirectory -ErrorAction SilentlyContinue
-        
+        # v2.9: Module pre-loaded at script start for performance
         if (Get-Module ActiveDirectory) {
             Get-ADUser -Filter * -Properties * | Select-Object @{
                 Name='NTName'; Expression={$_.SamAccountName}
@@ -761,11 +806,10 @@ function Get-ADGroups {
     )
     
     $scriptBlock = {
-        Import-Module ActiveDirectory -ErrorAction SilentlyContinue
-        
+        # v2.9: Module pre-loaded at script start for performance
         if (Get-Module ActiveDirectory) {
             $groups = @()
-            
+
             Get-ADGroup -Filter * -Properties * | ForEach-Object {
                 $group = $_
                 $members = Get-ADGroupMember -Identity $group -ErrorAction SilentlyContinue
@@ -2805,8 +2849,7 @@ function Get-ADTrusts {
     )
     
     $scriptBlock = {
-        Import-Module ActiveDirectory -ErrorAction SilentlyContinue
-        
+        # v2.9: Module pre-loaded at script start for performance
         if (Get-Module ActiveDirectory) {
             $domain = Get-ADDomain
             $trusts = Get-ADTrust -Filter * -ErrorAction SilentlyContinue
@@ -3385,10 +3428,9 @@ function Get-GPOBackup {
     
     $scriptBlock = {
         param($BackupPath)
-        
+
         try {
-            Import-Module GroupPolicy -ErrorAction Stop
-            
+            # v2.9: Module pre-loaded at script start for performance
             $gpoBackups = @()
             $allGPOs = Get-GPO -All
             
@@ -3570,8 +3612,7 @@ function Get-GPOPermissions {
     
     $scriptBlock = {
         try {
-            Import-Module GroupPolicy -ErrorAction Stop
-            
+            # v2.9: Module pre-loaded at script start for performance
             $gpoPermissions = @()
             $allGPOs = Get-GPO -All
             
@@ -3628,11 +3669,9 @@ function Get-GPOLinks {
     
     $scriptBlock = {
         try {
-            Import-Module GroupPolicy -ErrorAction Stop
-            Import-Module ActiveDirectory -ErrorAction Stop
-            
+            # v2.9: Modules pre-loaded at script start for performance
             $gpoLinks = @()
-            
+
             # Get domain
             $domain = Get-ADDomain
             
@@ -4996,6 +5035,7 @@ foreach ($computer in $ComputerName) {
             $stigResults | ConvertTo-Json -Depth 10 | Out-File -FilePath (Join-Path $computerOutputPath "($computer)STIG_Compliance_Summary.json")
 
             Write-AuditLog "V3.3 STIG compliance evaluation completed"
+            Flush-AuditLog  # v2.9: Flush log buffer after major phase
         } elseif ($PowerSTIGOnly) {
             Write-AuditLog "V3.3 STIG compliance evaluation skipped (PowerSTIG-only mode)"
         } else {
@@ -5114,6 +5154,7 @@ foreach ($computer in $ComputerName) {
                             }
 
                             Write-AuditLog "PowerSTIG evaluation completed successfully" -LogFile $errorLogPath
+                            Flush-AuditLog  # v2.9: Flush log buffer after major phase
                             Write-Host "[OK] PowerSTIG audit completed" -ForegroundColor Green
 
                         } else {
@@ -5158,14 +5199,19 @@ foreach ($computer in $ComputerName) {
         Write-AuditLog "BEGIN_MD5_HASH" -LogFile $errorLogPath
         $hashResults | ForEach-Object { Write-AuditLog $_ -LogFile $errorLogPath }
         Write-AuditLog "END_MD5_HASH" -LogFile $errorLogPath
-        
+
         Write-AuditLog "Audit complete for computer: $computer"
-        
+        Flush-AuditLog  # v2.9: Flush log buffer at end of computer audit
+
     } catch {
         Write-AuditLog "Error during audit of $computer`: $_" -LogFile $errorLogPath
+        Flush-AuditLog  # v2.9: Ensure errors are written
         Write-Error $_
     }
 }
+
+# v2.9: Final flush to ensure all buffered logs are written
+Flush-AuditLog
 
 Write-Host "`n$ScriptVersion complete!" -ForegroundColor Green
 
