@@ -352,6 +352,23 @@ powershell.exe -ExecutionPolicy Bypass -NoProfile -File "Uninstall-CyAudit.ps1" 
    powershell.exe -ExecutionPolicy Bypass -File "C:\CyAudit\CyAudit_3.5\Run-CyAuditPipeline.ps1"
    ```
 
+### Issue: Scheduled Task Not Created
+
+**Symptom:** Task doesn't exist after installation
+
+**Solution:** Create the task manually using PowerShell (as Administrator):
+
+```powershell
+$Action = New-ScheduledTaskAction -Execute "C:\CyAudit\CyAudit_3.5\Run-CyAuditPipeline.exe"
+$Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At "02:00"
+$Principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+$Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 4)
+
+Register-ScheduledTask -TaskName "CyAudit Automated Assessment" -Action $Action -Trigger $Trigger -Principal $Principal -Settings $Settings -Force
+```
+
+See `INSTALLER_README.md` for detailed manual setup instructions including GUI and command-line options.
+
 ### Note on UAC
 
 Scheduled tasks created with `NT AUTHORITY\SYSTEM` account and `RunLevel Highest` do **NOT** trigger UAC prompts. This is by design—UAC applies to interactive processes, not service accounts running in session 0.
@@ -449,4 +466,5 @@ Use this checklist to verify successful deployment:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | 2025-12-04 | Added manual scheduled task creation troubleshooting section |
 | 1.0.0 | 2025-12-01 | Initial release |

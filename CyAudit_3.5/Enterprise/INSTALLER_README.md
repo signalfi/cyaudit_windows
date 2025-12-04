@@ -290,6 +290,87 @@ Start-ScheduledTask -TaskName "CyAudit Automated Assessment"
 
 ---
 
+## Manual Scheduled Task Setup
+
+If the scheduled task was not created during installation (or needs to be recreated), follow these steps.
+
+### Quick Setup (PowerShell)
+
+Run PowerShell **as Administrator**:
+
+```powershell
+# For Protected (Clean) Install - EXE version
+$Action = New-ScheduledTaskAction -Execute "C:\CyAudit\CyAudit_3.5\Run-CyAuditPipeline.exe"
+
+# For Standard Install - PS1 version (uncomment below, comment above)
+# $Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ExecutionPolicy Bypass -NonInteractive -WindowStyle Hidden -File "C:\CyAudit\CyAudit_3.5\Run-CyAuditPipeline.ps1"'
+
+$Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At "02:00"
+
+$Principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" `
+    -LogonType ServiceAccount -RunLevel Highest
+
+$Settings = New-ScheduledTaskSettingsSet `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable `
+    -ExecutionTimeLimit (New-TimeSpan -Hours 4)
+
+Register-ScheduledTask `
+    -TaskName "CyAudit Automated Assessment" `
+    -Action $Action `
+    -Trigger $Trigger `
+    -Principal $Principal `
+    -Settings $Settings `
+    -Description "CyAudit 3.5 automated security assessment. Runs weekly at 2:00 AM Sunday." `
+    -Force
+
+# Verify creation
+Get-ScheduledTask -TaskName "CyAudit Automated Assessment"
+```
+
+### Task Scheduler GUI Setup
+
+1. **Open Task Scheduler** - Press `Win + R`, type `taskschd.msc`, press Enter
+2. **Create Task** - Click **Action > Create Task** (NOT "Create Basic Task")
+3. **General Tab:**
+   - Name: `CyAudit Automated Assessment`
+   - Select "Run whether user is logged on or not"
+   - Select "Run with highest privileges"
+   - Click "Change User or Group" > type `SYSTEM` > Check Names > OK
+4. **Triggers Tab:** New > Weekly > Sunday > 2:00 AM > OK
+5. **Actions Tab:** New > Start a program:
+   - **Protected:** `C:\CyAudit\CyAudit_3.5\Run-CyAuditPipeline.exe`
+   - **Standard:** `powershell.exe` with arguments: `-ExecutionPolicy Bypass -NonInteractive -WindowStyle Hidden -File "C:\CyAudit\CyAudit_3.5\Run-CyAuditPipeline.ps1"`
+6. **Conditions Tab:** Uncheck "Start only if on AC power"
+7. **Settings Tab:** Check "Run task as soon as possible after a scheduled start is missed"
+8. **Click OK** to save
+
+### Command Line (schtasks.exe)
+
+```cmd
+:: For Protected Install (EXE)
+schtasks /Create /TN "CyAudit Automated Assessment" /TR "C:\CyAudit\CyAudit_3.5\Run-CyAuditPipeline.exe" /SC WEEKLY /D SUN /ST 02:00 /RU "NT AUTHORITY\SYSTEM" /RL HIGHEST /F
+```
+
+### Verify Task Creation
+
+```powershell
+# Check task exists
+Get-ScheduledTask -TaskName "CyAudit Automated Assessment"
+
+# Run task immediately for testing
+Start-ScheduledTask -TaskName "CyAudit Automated Assessment"
+```
+
+### Remove Scheduled Task
+
+```powershell
+Unregister-ScheduledTask -TaskName "CyAudit Automated Assessment" -Confirm:$false
+```
+
+---
+
 ## Uninstallation
 
 ### GUI Uninstall
@@ -485,6 +566,7 @@ Get-FileHash -Path "Output\CyAudit_3.5_Setup_Clean.exe" -Algorithm MD5
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.6.0 | 2025-12-04 | Fixed scheduled task creation in protected installer, added manual task setup documentation |
 | 2.3.0 | 2025-12-02 | Fixed PS2EXE argument parsing (`-end` parameter), timestamp format (underscore), directory cleanup |
 | 2.1.0 | 2025-12-02 | Fixed `$PSScriptRoot` empty in PS2EXE executables |
 | 2.0.0 | 2025-12-02 | Added protected (Clean) build with PS2EXE compilation |
