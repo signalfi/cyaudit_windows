@@ -8,28 +8,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.5.1] - 2025-12-11
 
 ### Fixed
-- **PowerSTIG Race Condition**: Resolved issue where Splunk transformation started before PowerSTIG checks completed on enterprise systems, resulting in incomplete SplunkReady files missing PowerSTIG data.
+- **PowerSTIG Race Condition**: Resolved critical issue where Splunk transformation started before PowerSTIG checks completed on enterprise systems, resulting in incomplete SplunkReady files missing PowerSTIG data.
+  - **Root Cause**: On enterprise systems with slow storage, antivirus scanning, or large DSC configurations, PowerSTIG's `Test-DscConfiguration` takes significantly longer. The pipeline was not waiting for all files to be written before starting transformation.
+  - **Solution**: Implemented completion manifest validation system to ensure all assessment operations complete before proceeding.
 
 ### Added
-- **Completion Manifest System**: CyAudit now writes `_CyAudit_Complete.json` as its final operation containing:
-  - Total file count and complete file list
-  - PowerSTIG status (Success/Failed/Skipped/NotRun)
-  - Expected vs present PowerSTIG files
-  - Completion timestamps (local and UTC)
-  - File sizes and metadata
+- **Completion Manifest System** (`_CyAudit_Complete.json`):
+  - Written as the absolute final operation in `CyAudit_Opus_V3.5.ps1` after all file exports
+  - Contains total file count, complete file list with sizes, and timestamps
+  - Tracks PowerSTIG status: Success, Failed, Skipped, or NotRun
+  - Lists expected PowerSTIG files vs actually present files
+  - Enables pipeline to verify all data is written before transformation
 
-- **Wait-ForCyAuditCompletion Function**: Pipeline now includes robust validation that:
-  - Waits for completion manifest (30 minute timeout)
-  - Validates manifest contents and file counts
-  - Verifies expected PowerSTIG files exist when PowerSTIG is enabled
-  - Reports warnings for missing files
+- **Wait-ForCyAuditCompletion Function** in `Run-CyAuditPipeline.ps1`:
+  - Polls for completion manifest with 30-minute timeout (configurable)
+  - Validates manifest JSON structure and contents
+  - Verifies expected PowerSTIG output files exist when PowerSTIG ran successfully:
+    - `(HOSTNAME)_PowerSTIG_DSC_Results.xml`
+    - `(HOSTNAME)_PowerSTIG_Findings.csv`
+    - `(HOSTNAME)_STIG_Comparison.csv`
+    - `(HOSTNAME)_STIG_Merged_Results.csv`
+    - `(HOSTNAME)_Enhanced_Summary.json`
+  - Reports warnings for missing or incomplete files
   - Only proceeds to Splunk transformation after validation passes
 
-- **Phase 1b: Validating Assessment Output**: New pipeline phase provides visibility into validation process
+- **Phase 1b: Validating Assessment Output**: New pipeline phase between CyAudit execution and Splunk transformation provides visibility into the validation process
 
 ### Changed
-- Pipeline now shows PowerSTIG status (enabled/disabled, success/failed) after validation
+- Pipeline now displays PowerSTIG status (enabled/disabled, success/failed) after validation
 - Validation warnings are logged for troubleshooting incomplete assessments
+- Minimum expected file count validation (20+ core audit files)
+
+### Files Modified
+- `CyAudit_3.5/CyAudit_Opus_V3.5.ps1` - Added completion manifest generation (+82 lines)
+- `CyAudit_3.5/Run-CyAuditPipeline.ps1` - Added Wait-ForCyAuditCompletion function (+202 lines)
+- `WindowsBuild/Scripts/CyAudit_Opus_V3.5.ps1` - PS2EXE version with same changes
+- `WindowsBuild/Scripts/Run-CyAuditPipeline.ps1` - PS2EXE version with same changes
+
+### Recompiled Executables
+- `CyAudit_3.5/Build/CyAudit_Opus_V3.5.exe` - Recompiled with completion manifest code (+4KB)
+- `CyAudit_3.5/Build/Run-CyAuditPipeline.exe` - Recompiled with validation logic (+8KB)
+
+### Rebuilt Installer
+- `Output/CyAudit_3.5_Setup_Clean.exe` - Protected installer rebuilt with updated executables
 
 ## [3.5.0] - 2025-12-10
 
