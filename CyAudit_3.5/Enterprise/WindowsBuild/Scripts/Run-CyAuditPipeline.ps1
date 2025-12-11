@@ -283,6 +283,171 @@ function Invoke-Cleanup {
     }
 }
 
+function Wait-ForCyAuditCompletion {
+    <#
+    .SYNOPSIS
+        Waits for CyAudit to complete and validates output files
+
+    .DESCRIPTION
+        Monitors the assessment output directory for the completion manifest file
+        (_CyAudit_Complete.json) and validates that all expected files are present,
+        especially PowerSTIG results when PowerSTIG was enabled.
+
+    .PARAMETER OutputPath
+        The path where CyAudit writes its output
+
+    .PARAMETER TimeoutSeconds
+        Maximum time to wait for completion (default: 1800 = 30 minutes)
+
+    .PARAMETER PollIntervalSeconds
+        How often to check for completion (default: 5 seconds)
+
+    .RETURNS
+        Hashtable with validation results including manifest data and file counts
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$OutputPath,
+
+        [int]$TimeoutSeconds = 1800,
+
+        [int]$PollIntervalSeconds = 5
+    )
+
+    Write-PipelineLog "Waiting for CyAudit completion (timeout: $TimeoutSeconds seconds)..." -Level INFO
+
+    $startTime = Get-Date
+    $manifestPath = $null
+    $assessmentDir = $null
+
+    # Phase 1: Wait for completion manifest to appear
+    while ($true) {
+        $elapsed = ((Get-Date) - $startTime).TotalSeconds
+
+        if ($elapsed -gt $TimeoutSeconds) {
+            Write-PipelineLog "Timeout waiting for CyAudit completion after $TimeoutSeconds seconds" -Level ERROR
+            return @{
+                Success = $false
+                Error = "Timeout waiting for completion manifest"
+                ElapsedSeconds = $elapsed
+            }
+        }
+
+        # Find the most recent assessment directory
+        $assessmentDir = Get-ChildItem -Path $OutputPath -Directory -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+
+        if ($assessmentDir) {
+            $manifestPath = Join-Path $assessmentDir.FullName "_CyAudit_Complete.json"
+
+            if (Test-Path $manifestPath) {
+                Write-PipelineLog "Found completion manifest after $([math]::Round($elapsed, 1)) seconds" -Level DEBUG
+                break
+            }
+        }
+
+        # Show progress every 30 seconds
+        if ([math]::Floor($elapsed) % 30 -eq 0 -and $elapsed -gt 0) {
+            Write-PipelineLog "Still waiting for CyAudit... ($([math]::Round($elapsed, 0))s elapsed)" -Level DEBUG
+        }
+
+        Start-Sleep -Seconds $PollIntervalSeconds
+    }
+
+    # Phase 2: Read and validate the completion manifest
+    try {
+        # Small delay to ensure file is fully written
+        Start-Sleep -Milliseconds 500
+
+        $manifestContent = Get-Content -Path $manifestPath -Raw -ErrorAction Stop
+        $manifest = $manifestContent | ConvertFrom-Json -ErrorAction Stop
+
+        Write-PipelineLog "Completion manifest loaded successfully" -Level SUCCESS
+        Write-PipelineLog "  Script Version: $($manifest.ScriptVersion)" -Level DEBUG
+        Write-PipelineLog "  Total Files: $($manifest.TotalFileCount)" -Level DEBUG
+        Write-PipelineLog "  PowerSTIG Status: $($manifest.PowerSTIG.Status)" -Level DEBUG
+
+    } catch {
+        Write-PipelineLog "Failed to read completion manifest: $($_.Exception.Message)" -Level ERROR
+        return @{
+            Success = $false
+            Error = "Failed to parse completion manifest: $($_.Exception.Message)"
+            AssessmentPath = $assessmentDir.FullName
+        }
+    }
+
+    # Phase 3: Validate PowerSTIG files if PowerSTIG was enabled and successful
+    $validationWarnings = @()
+
+    if ($manifest.PowerSTIG.Enabled -and $manifest.PowerSTIG.Status -eq "Success") {
+        Write-PipelineLog "Validating PowerSTIG output files..." -Level INFO
+
+        $missingFiles = $manifest.PowerSTIG.MissingFiles
+        if ($missingFiles -and $missingFiles.Count -gt 0) {
+            foreach ($missing in $missingFiles) {
+                $validationWarnings += "Expected PowerSTIG file missing: $missing"
+                Write-PipelineLog "  WARNING: Missing file - $missing" -Level WARNING
+            }
+        }
+
+        # Double-check by scanning the directory
+        $actualFiles = Get-ChildItem -Path $assessmentDir.FullName -File | Select-Object -ExpandProperty Name
+        $expectedPowerSTIGPatterns = @('PowerSTIG', '_STIG_Comparison', '_STIG_Merged', 'Enhanced_Summary')
+
+        $foundPowerSTIGFiles = $actualFiles | Where-Object {
+            $file = $_
+            $expectedPowerSTIGPatterns | Where-Object { $file -match $_ }
+        }
+
+        Write-PipelineLog "  Found $($foundPowerSTIGFiles.Count) PowerSTIG-related files" -Level DEBUG
+
+        if ($foundPowerSTIGFiles.Count -lt 3) {
+            $validationWarnings += "Fewer than expected PowerSTIG files found ($($foundPowerSTIGFiles.Count))"
+            Write-PipelineLog "  WARNING: Expected at least 3 PowerSTIG files, found $($foundPowerSTIGFiles.Count)" -Level WARNING
+        }
+    } elseif ($manifest.PowerSTIG.Enabled -and $manifest.PowerSTIG.Status -eq "Failed") {
+        Write-PipelineLog "PowerSTIG evaluation failed during assessment - some STIG data may be missing" -Level WARNING
+        $validationWarnings += "PowerSTIG evaluation failed"
+    } elseif ($manifest.PowerSTIG.Enabled -and $manifest.PowerSTIG.Status -eq "NotRun") {
+        Write-PipelineLog "PowerSTIG was enabled but did not run - prerequisites may be missing" -Level WARNING
+        $validationWarnings += "PowerSTIG did not run"
+    }
+
+    # Phase 4: Validate minimum file count
+    $actualFileCount = (Get-ChildItem -Path $assessmentDir.FullName -File).Count
+    $manifestFileCount = $manifest.TotalFileCount
+
+    # Allow for the manifest file itself being added after count
+    if ([math]::Abs($actualFileCount - $manifestFileCount) -gt 2) {
+        $validationWarnings += "File count mismatch: manifest says $manifestFileCount, found $actualFileCount"
+        Write-PipelineLog "  WARNING: File count mismatch (manifest: $manifestFileCount, actual: $actualFileCount)" -Level WARNING
+    }
+
+    # Minimum expected files (core audit output without PowerSTIG)
+    $minimumExpectedFiles = 20
+    if ($actualFileCount -lt $minimumExpectedFiles) {
+        Write-PipelineLog "  WARNING: Fewer files than expected ($actualFileCount < $minimumExpectedFiles minimum)" -Level WARNING
+        $validationWarnings += "Low file count: $actualFileCount (expected at least $minimumExpectedFiles)"
+    }
+
+    $elapsed = ((Get-Date) - $startTime).TotalSeconds
+
+    Write-PipelineLog "CyAudit completion validated in $([math]::Round($elapsed, 1)) seconds" -Level SUCCESS
+
+    return @{
+        Success = $true
+        AssessmentPath = $assessmentDir.FullName
+        Manifest = $manifest
+        ManifestPath = $manifestPath
+        TotalFiles = $actualFileCount
+        PowerSTIGStatus = $manifest.PowerSTIG.Status
+        PowerSTIGEnabled = $manifest.PowerSTIG.Enabled
+        Warnings = $validationWarnings
+        ElapsedSeconds = $elapsed
+    }
+}
+
 #endregion
 
 #region Main Execution
@@ -429,20 +594,37 @@ try {
             throw "CyAudit exited with code: $LASTEXITCODE"
         }
 
-        Write-PipelineLog "CyAudit assessment completed successfully" -Level SUCCESS
+        Write-PipelineLog "CyAudit script execution completed" -Level SUCCESS
 
-        # Find the output directory (most recent directory in ActualOutputPath)
-        # ActualOutputPath is either CyAuditOptions.OutputPath if set, or $PWD (current directory)
-        $assessmentDir = Get-ChildItem -Path $script:ActualOutputPath -Directory |
-            Sort-Object LastWriteTime -Descending |
-            Select-Object -First 1
+        # Wait for completion manifest and validate all output files
+        # This ensures PowerSTIG and all other assessments are fully written before proceeding
+        Write-Host ""
+        Write-Host "-------------------------------------------------------------------" -ForegroundColor Cyan
+        Write-Host " Phase 1b: Validating Assessment Output" -ForegroundColor Cyan
+        Write-Host "-------------------------------------------------------------------" -ForegroundColor Cyan
+        Write-Host ""
 
-        if (-not $assessmentDir) {
-            throw "Could not locate CyAudit output directory in $($script:ActualOutputPath)"
+        $validationResult = Wait-ForCyAuditCompletion -OutputPath $script:ActualOutputPath -TimeoutSeconds 1800
+
+        if (-not $validationResult.Success) {
+            throw "CyAudit output validation failed: $($validationResult.Error)"
         }
 
-        $script:AssessmentPath = $assessmentDir.FullName
-        Write-PipelineLog "Assessment output: $script:AssessmentPath" -Level INFO
+        $script:AssessmentPath = $validationResult.AssessmentPath
+        $script:CompletionManifest = $validationResult.Manifest
+
+        Write-PipelineLog "Assessment output validated: $script:AssessmentPath" -Level SUCCESS
+        Write-PipelineLog "  Total files: $($validationResult.TotalFiles)" -Level INFO
+        Write-PipelineLog "  PowerSTIG enabled: $($validationResult.PowerSTIGEnabled)" -Level INFO
+        Write-PipelineLog "  PowerSTIG status: $($validationResult.PowerSTIGStatus)" -Level INFO
+
+        # Log any validation warnings
+        if ($validationResult.Warnings -and $validationResult.Warnings.Count -gt 0) {
+            Write-PipelineLog "  Validation warnings:" -Level WARNING
+            foreach ($warning in $validationResult.Warnings) {
+                Write-PipelineLog "    - $warning" -Level WARNING
+            }
+        }
     }
     catch {
         Write-PipelineLog "CyAudit assessment failed: $($_.Exception.Message)" -Level ERROR

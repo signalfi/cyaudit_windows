@@ -5158,7 +5158,87 @@ foreach ($computer in $ComputerName) {
         Write-AuditLog "BEGIN_MD5_HASH" -LogFile $errorLogPath
         $hashResults | ForEach-Object { Write-AuditLog $_ -LogFile $errorLogPath }
         Write-AuditLog "END_MD5_HASH" -LogFile $errorLogPath
-        
+
+        # Generate completion manifest for pipeline synchronization
+        # This file signals that all assessment operations have completed and files are written
+        Write-AuditLog "Generating completion manifest..." -LogFile $errorLogPath
+        $allOutputFiles = Get-ChildItem -Path $computerOutputPath -File | Select-Object Name, Length, LastWriteTime
+
+        # Determine PowerSTIG status
+        $powerSTIGStatus = "Skipped"
+        $powerSTIGFileCount = 0
+        if (-not $SkipPowerSTIG) {
+            if ($powerSTIGAuditResult -and $powerSTIGAuditResult.Success) {
+                $powerSTIGStatus = "Success"
+                $powerSTIGFileCount = ($allOutputFiles | Where-Object { $_.Name -match 'PowerSTIG|_STIG_Comparison|_STIG_Merged|Enhanced_Summary' }).Count
+            } elseif ($powerSTIGAuditResult) {
+                $powerSTIGStatus = "Failed"
+            } else {
+                $powerSTIGStatus = "NotRun"
+            }
+        }
+
+        # Define expected PowerSTIG files (when PowerSTIG runs successfully)
+        $expectedPowerSTIGFiles = @(
+            "($computer)_PowerSTIG_DSC_Results.xml",
+            "($computer)_PowerSTIG_Findings.csv",
+            "($computer)_STIG_Comparison.csv",
+            "($computer)_STIG_Merged_Results.csv",
+            "($computer)_Enhanced_Summary.json"
+        )
+
+        # Check which expected PowerSTIG files exist
+        $presentPowerSTIGFiles = @()
+        $missingPowerSTIGFiles = @()
+        if ($powerSTIGStatus -eq "Success") {
+            foreach ($expectedFile in $expectedPowerSTIGFiles) {
+                $filePath = Join-Path $computerOutputPath $expectedFile
+                if (Test-Path $filePath) {
+                    $presentPowerSTIGFiles += $expectedFile
+                } else {
+                    $missingPowerSTIGFiles += $expectedFile
+                }
+            }
+        }
+
+        $completionManifest = [PSCustomObject]@{
+            ManifestVersion = "1.0"
+            ScriptVersion = $ScriptVersion
+            ComputerName = $computer
+            ClientName = $ClientName
+            CompletionTime = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+            CompletionTimeUTC = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+            OutputPath = $computerOutputPath
+            TotalFileCount = $allOutputFiles.Count
+            TotalFileSizeBytes = ($allOutputFiles | Measure-Object -Property Length -Sum).Sum
+            PowerSTIG = @{
+                Enabled = (-not $SkipPowerSTIG)
+                Status = $powerSTIGStatus
+                FileCount = $powerSTIGFileCount
+                ExpectedFiles = $expectedPowerSTIGFiles
+                PresentFiles = $presentPowerSTIGFiles
+                MissingFiles = $missingPowerSTIGFiles
+                Duration = if ($powerSTIGAuditResult -and $powerSTIGAuditResult.Duration) { $powerSTIGAuditResult.Duration.TotalSeconds } else { $null }
+                TotalChecks = if ($powerSTIGAuditResult) { $powerSTIGAuditResult.TotalResources } else { 0 }
+                CompliantChecks = if ($powerSTIGAuditResult) { $powerSTIGAuditResult.CompliantResources } else { 0 }
+                NonCompliantChecks = if ($powerSTIGAuditResult) { $powerSTIGAuditResult.NonCompliantResources } else { 0 }
+            }
+            Files = $allOutputFiles | ForEach-Object {
+                @{
+                    Name = $_.Name
+                    Size = $_.Length
+                    LastWriteTime = $_.LastWriteTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                }
+            }
+            Status = "Complete"
+        }
+
+        $manifestPath = Join-Path $computerOutputPath "_CyAudit_Complete.json"
+        $completionManifest | ConvertTo-Json -Depth 10 | Out-File -FilePath $manifestPath -Encoding UTF8
+        Write-AuditLog "Completion manifest written: $manifestPath" -LogFile $errorLogPath
+        Write-AuditLog "Total files generated: $($allOutputFiles.Count)" -LogFile $errorLogPath
+        Write-AuditLog "PowerSTIG status: $powerSTIGStatus" -LogFile $errorLogPath
+
         Write-AuditLog "Audit complete for computer: $computer"
         
     } catch {
